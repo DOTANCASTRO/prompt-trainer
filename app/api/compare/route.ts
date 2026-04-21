@@ -40,44 +40,59 @@ Respond with this exact JSON shape:
 }`;
 
 export async function POST(req: NextRequest) {
-  const form = await req.formData();
-  const target = form.get("target") as File | null;
-  const student = form.get("student") as File | null;
-  const promptText = (form.get("prompt") as string) || "";
+  try {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return NextResponse.json({ error: "ANTHROPIC_API_KEY is not set in environment variables." }, { status: 500 });
+    }
 
-  if (!target || !student) {
-    return NextResponse.json({ error: "Both images required" }, { status: 400 });
+    const form = await req.formData();
+    const target = form.get("target") as File | null;
+    const student = form.get("student") as File | null;
+    const promptText = (form.get("prompt") as string) || "";
+
+    if (!target || !student) {
+      return NextResponse.json({ error: "Both images required" }, { status: 400 });
+    }
+
+    const toBase64 = async (file: File) =>
+      Buffer.from(await file.arrayBuffer()).toString("base64");
+
+    const [targetB64, studentB64] = await Promise.all([toBase64(target), toBase64(student)]);
+
+    const normalizeType = (f: File): "image/jpeg" | "image/png" | "image/webp" | "image/gif" => {
+      const t = f.type?.toLowerCase();
+      if (t === "image/png") return "image/png";
+      if (t === "image/webp") return "image/webp";
+      if (t === "image/gif") return "image/gif";
+      return "image/jpeg";
+    };
+
+    const response = await client.messages.create({
+      model: "claude-opus-4-7",
+      max_tokens: 1500,
+      system: SYSTEM,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "TARGET IMAGE:" },
+            { type: "image", source: { type: "base64", media_type: normalizeType(target), data: targetB64 } },
+            { type: "text", text: "STUDENT'S RESULT:" },
+            { type: "image", source: { type: "base64", media_type: normalizeType(student), data: studentB64 } },
+            { type: "text", text: `Student's prompt: "${promptText}"\n\n${PROMPT}` },
+          ],
+        },
+      ],
+    });
+
+    const text = response.content[0].type === "text" ? response.content[0].text : "";
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}") + 1;
+    const result = JSON.parse(text.slice(start, end));
+
+    return NextResponse.json(result);
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  const toBase64 = async (file: File) =>
-    Buffer.from(await file.arrayBuffer()).toString("base64");
-
-  const [targetB64, studentB64] = await Promise.all([toBase64(target), toBase64(student)]);
-
-  const mediaType = (f: File) => (f.type || "image/jpeg") as "image/jpeg" | "image/png" | "image/webp" | "image/gif";
-
-  const response = await client.messages.create({
-    model: "claude-opus-4-7",
-    max_tokens: 1500,
-    system: SYSTEM,
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "text", text: "TARGET IMAGE:" },
-          { type: "image", source: { type: "base64", media_type: mediaType(target), data: targetB64 } },
-          { type: "text", text: "STUDENT'S RESULT:" },
-          { type: "image", source: { type: "base64", media_type: mediaType(student), data: studentB64 } },
-          { type: "text", text: `Student's prompt: "${promptText}"\n\n${PROMPT}` },
-        ],
-      },
-    ],
-  });
-
-  const text = response.content[0].type === "text" ? response.content[0].text : "";
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}") + 1;
-  const result = JSON.parse(text.slice(start, end));
-
-  return NextResponse.json(result);
 }
