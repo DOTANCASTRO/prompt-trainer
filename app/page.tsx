@@ -11,8 +11,8 @@ const DIMS = [
 ];
 
 const TARGET_BANK = [
-  { src: "/targets/target.png", label: "Target 1" },
-  { src: "/targets/target2.png", label: "Target 2" },
+  { src: "/targets/target.jpg", label: "Target 1" },
+  { src: "/targets/target2.jpg", label: "Target 2" },
 ];
 
 type DimResult = { score: number; feedback: string };

@@ -12,7 +12,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <div style={{
           position: "fixed", inset: 0, zIndex: -1,
-          backgroundImage: "url('/bg.png')",
+          backgroundImage: "url('/bg.jpg')",
           backgroundSize: "cover", backgroundPosition: "center",
           filter: "brightness(1.05)",
           transform: "scale(1.1)",
