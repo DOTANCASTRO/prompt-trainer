@@ -22,7 +22,7 @@ Also provide:
 - overall_score: weighted average
 - got_right: 2–3 specific things the student captured well
 - to_fix: top 3 concrete prompt improvements
-- improved_prompt: a rewritten version of their prompt that would score higher
+- style_feedback: a warm, non-technical paragraph (4–6 sentences) about how this student tends to see and describe reality. Not about this specific image — about their observational style. Do they lead with objects and miss atmosphere? Do they measure instead of feel? Do they describe what they expect to see rather than what's actually there? The goal of this exercise is not to prompt a specific image, but to train the ability to truly observe. Speak to them directly, as a teacher would.
 
 Respond with this exact JSON shape:
 {
@@ -36,7 +36,7 @@ Respond with this exact JSON shape:
   "overall_score": 0,
   "got_right": [],
   "to_fix": [],
-  "improved_prompt": ""
+  "style_feedback": ""
 }`;
 
 export async function POST(req: NextRequest) {

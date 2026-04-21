@@ -16,7 +16,7 @@ type Result = {
   overall_score: number;
   got_right: string[];
   to_fix: string[];
-  improved_prompt: string;
+  style_feedback: string;
 };
 
 function scoreColor(s: number) {
@@ -103,7 +103,7 @@ export default function Home() {
 
       <div style={{ marginBottom: 40 }}>
         <h1 style={{ fontSize: 20, fontWeight: 600, letterSpacing: "-0.02em", marginBottom: 4 }}>
-          Prompt Trainer
+          Learn to see again
         </h1>
         <p style={{ fontSize: 13, color: "#888" }}>
           Upload the target image and the student's result to get a detailed comparison.
@@ -197,9 +197,9 @@ export default function Home() {
           ))}
 
           <div style={{ background: "#fff", border: "1.5px solid #ebebeb", borderRadius: 10, padding: 18 }}>
-            <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#aaa", marginBottom: 12 }}>Suggested Prompt</p>
-            <p style={{ fontSize: 13, color: "#444", lineHeight: 1.7, fontStyle: "italic", borderLeft: "2px solid #e8e8e8", paddingLeft: 14 }}>
-              {result.improved_prompt}
+            <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#aaa", marginBottom: 12 }}>How you see</p>
+            <p style={{ fontSize: 14, color: "#444", lineHeight: 1.8 }}>
+              {result.style_feedback}
             </p>
           </div>
 
