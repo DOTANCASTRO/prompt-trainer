@@ -1,0 +1,83 @@
+import Anthropic from "@anthropic-ai/sdk";
+import { NextRequest, NextResponse } from "next/server";
+
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+const SYSTEM = `You are evaluating a student's ability to describe an image through a text prompt.
+The student saw a target image and wrote a prompt to recreate it. Compare the target and their result.
+Be specific and pedagogically useful. Return only valid JSON.`;
+
+const PROMPT = `Compare the TARGET image (first) with the STUDENT'S RESULT (second).
+
+Score each dimension 1–10 and give one concrete sentence of feedback.
+
+Dimensions:
+1. subjects — objects, count, identity
+2. colors — palette, tones, contrast
+3. composition — layout, framing, spatial relationships
+4. style — rendering, texture, medium
+5. mood — atmosphere, lighting, feeling
+
+Also provide:
+- overall_score: weighted average
+- got_right: 2–3 specific things the student captured well
+- to_fix: top 3 concrete prompt improvements
+- improved_prompt: a rewritten version of their prompt that would score higher
+
+Respond with this exact JSON shape:
+{
+  "dimensions": {
+    "subjects":    { "score": 0, "feedback": "" },
+    "colors":      { "score": 0, "feedback": "" },
+    "composition": { "score": 0, "feedback": "" },
+    "style":       { "score": 0, "feedback": "" },
+    "mood":        { "score": 0, "feedback": "" }
+  },
+  "overall_score": 0,
+  "got_right": [],
+  "to_fix": [],
+  "improved_prompt": ""
+}`;
+
+export async function POST(req: NextRequest) {
+  const form = await req.formData();
+  const target = form.get("target") as File | null;
+  const student = form.get("student") as File | null;
+  const promptText = (form.get("prompt") as string) || "";
+
+  if (!target || !student) {
+    return NextResponse.json({ error: "Both images required" }, { status: 400 });
+  }
+
+  const toBase64 = async (file: File) =>
+    Buffer.from(await file.arrayBuffer()).toString("base64");
+
+  const [targetB64, studentB64] = await Promise.all([toBase64(target), toBase64(student)]);
+
+  const mediaType = (f: File) => (f.type || "image/jpeg") as "image/jpeg" | "image/png" | "image/webp" | "image/gif";
+
+  const response = await client.messages.create({
+    model: "claude-opus-4-7",
+    max_tokens: 1500,
+    system: SYSTEM,
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "TARGET IMAGE:" },
+          { type: "image", source: { type: "base64", media_type: mediaType(target), data: targetB64 } },
+          { type: "text", text: "STUDENT'S RESULT:" },
+          { type: "image", source: { type: "base64", media_type: mediaType(student), data: studentB64 } },
+          { type: "text", text: `Student's prompt: "${promptText}"\n\n${PROMPT}` },
+        ],
+      },
+    ],
+  });
+
+  const text = response.content[0].type === "text" ? response.content[0].text : "";
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}") + 1;
+  const result = JSON.parse(text.slice(start, end));
+
+  return NextResponse.json(result);
+}
