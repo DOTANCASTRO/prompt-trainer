@@ -1,7 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
-import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 
 const DIMS = [
   { key: "subjects",    label: "Subjects & Objects" },
@@ -12,7 +11,8 @@ const DIMS = [
 ];
 
 const TARGET_BANK = [
-  { src: "/targets/mug-plant.jpg", label: "Mug & Plant" },
+  { src: "/targets/target.png", label: "Target 1" },
+  { src: "/targets/target2.png", label: "Target 2" },
 ];
 
 type DimResult = { score: number; feedback: string };
@@ -41,13 +41,9 @@ function ImageUpload({ label, id, file, onChange }: {
     onChange(f);
   };
 
-  // sync preview if file is set externally
-  if (file && !preview) {
-    setPreview(URL.createObjectURL(file));
-  }
-  if (!file && preview) {
-    setPreview(null);
-  }
+  useEffect(() => {
+    if (!file) setPreview(null);
+  }, [file]);
 
   return (
     <div>
@@ -65,7 +61,16 @@ function ImageUpload({ label, id, file, onChange }: {
       >
         {preview
           ? <img src={preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          : <span style={{ color: "#bbb", fontSize: 13 }}>Click or drop image</span>
+          : (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              <span style={{ color: "#bbb", fontSize: 12 }}>Click or drop image</span>
+            </div>
+          )
         }
       </div>
       <input ref={inputRef} type="file" accept="image/*" style={{ display: "none" }}
@@ -126,19 +131,24 @@ export default function Home() {
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 40 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <Image src="/logo.png" alt="Castro Lab" width={48} height={48} style={{ objectFit: "contain" }} />
-          <div>
-            <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", color: "#aaa", marginBottom: 2 }}>Castro Lab</p>
-            <h1 style={{ fontSize: 20, fontWeight: 600, letterSpacing: "-0.02em" }}>Learn to See Again</h1>
-          </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+          <img src="/logo.png" alt="Castro Lab" width={80} height={80} style={{ objectFit: "contain" }} />
+          <h1 style={{ fontSize: 28, fontWeight: 600, letterSpacing: "-0.03em" }}>Learn to See Again</h1>
         </div>
-        <button onClick={() => setShowAbout(!showAbout)} style={{
-          background: "none", border: "1.5px solid #e0e0e0", borderRadius: 8,
-          padding: "6px 14px", fontSize: 12, color: "#888", cursor: "pointer",
-        }}>
-          {showAbout ? "Close" : "About"}
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => setShowAbout(!showAbout)} style={{
+            background: "none", border: "1.5px solid #e0e0e0", borderRadius: 8,
+            padding: "6px 14px", fontSize: 12, color: "#888", cursor: "pointer",
+          }}>
+            {showAbout ? "Close" : "About"}
+          </button>
+          <button onClick={reset} style={{
+            background: "none", border: "1.5px solid #e0e0e0", borderRadius: 8,
+            padding: "6px 14px", fontSize: 12, color: "#888", cursor: "pointer",
+          }}>
+            Start Over
+          </button>
+        </div>
       </div>
 
       {/* About panel */}
@@ -157,8 +167,7 @@ export default function Home() {
             <ol style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
               {[
                 "Choose a target image from the bank below, or upload your own.",
-                "Study the image carefully for 60–90 seconds. Then close it.",
-                "Write a prompt describing what you saw — as precisely as you can.",
+                "Write a prompt describing what you see — as precisely as you can.",
                 "Use your prompt in an image generation tool (Midjourney, DALL·E, etc.) and save the result.",
                 "Upload your result here alongside the target.",
                 "Read the feedback — not to score better next time, but to notice what you missed.",
@@ -208,6 +217,7 @@ export default function Home() {
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
+          dir="auto"
           placeholder="Paste the prompt you used to generate your image…"
           style={{
             width: "100%", background: "#fafaf8", border: "1.5px solid #e0e0e0",

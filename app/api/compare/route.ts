@@ -7,7 +7,7 @@ const SYSTEM = `You are evaluating a user's ability to describe an image through
 The user saw a target image and wrote a prompt to recreate it. Compare the target and their result.
 Be specific and pedagogically useful. Return only valid JSON.`;
 
-const PROMPT = `Compare the TARGET image (first) with the STUDENT'S RESULT (second).
+const PROMPT = `Compare the TARGET image (first) with the USER'S RESULT (second).
 
 Score each dimension 1–10 and give one concrete sentence of feedback.
 
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
             { type: "image", source: { type: "base64", media_type: normalizeType(target), data: targetB64 } },
             { type: "text", text: "STUDENT'S RESULT:" },
             { type: "image", source: { type: "base64", media_type: normalizeType(student), data: studentB64 } },
-            { type: "text", text: `Student's prompt: "${promptText}"\n\n${PROMPT}` },
+            { type: "text", text: `User's prompt: "${promptText}"\n\n${PROMPT}` },
           ],
         },
       ],
