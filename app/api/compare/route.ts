@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const SYSTEM = `You are evaluating a student's ability to describe an image through a text prompt.
-The student saw a target image and wrote a prompt to recreate it. Compare the target and their result.
+const SYSTEM = `You are evaluating a user's ability to describe an image through a text prompt.
+The user saw a target image and wrote a prompt to recreate it. Compare the target and their result.
 Be specific and pedagogically useful. Return only valid JSON.`;
 
 const PROMPT = `Compare the TARGET image (first) with the STUDENT'S RESULT (second).
@@ -20,9 +20,9 @@ Dimensions:
 
 Also provide:
 - overall_score: weighted average
-- got_right: 2–3 specific things the student captured well
+- got_right: 2–3 specific things the user captured well
 - to_fix: top 3 concrete prompt improvements
-- style_feedback: a warm, non-technical paragraph (4–6 sentences) about how this student tends to see and describe reality. Not about this specific image — about their observational style. Do they lead with objects and miss atmosphere? Do they measure instead of feel? Do they describe what they expect to see rather than what's actually there? The goal of this exercise is not to prompt a specific image, but to train the ability to truly observe. Speak to them directly, as a teacher would.
+- style_feedback: a warm, non-technical paragraph (4–6 sentences) about how this user tends to see and describe reality. Not about this specific image — about their observational style. Do they lead with objects and miss atmosphere? Do they measure instead of feel? Do they describe what they expect to see rather than what's actually there? The goal of this exercise is not to prompt a specific image, but to train the ability to truly observe. Speak to them directly, as a teacher would.
 
 Respond with this exact JSON shape:
 {

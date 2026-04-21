@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Image from "next/image";
 
 const DIMS = [
   { key: "subjects",    label: "Subjects & Objects" },
@@ -8,6 +9,10 @@ const DIMS = [
   { key: "composition", label: "Composition & Layout" },
   { key: "style",       label: "Style & Texture" },
   { key: "mood",        label: "Mood & Atmosphere" },
+];
+
+const TARGET_BANK = [
+  { src: "/targets/mug-plant.jpg", label: "Mug & Plant" },
 ];
 
 type DimResult = { score: number; feedback: string };
@@ -25,16 +30,24 @@ function scoreColor(s: number) {
   return "#b83030";
 }
 
-function ImageUpload({
-  label, id, onChange,
-}: { label: string; id: string; onChange: (f: File) => void }) {
+function ImageUpload({ label, id, file, onChange }: {
+  label: string; id: string; file: File | null; onChange: (f: File) => void;
+}) {
   const [preview, setPreview] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = (file: File) => {
-    setPreview(URL.createObjectURL(file));
-    onChange(file);
+  const handleFile = (f: File) => {
+    setPreview(URL.createObjectURL(f));
+    onChange(f);
   };
+
+  // sync preview if file is set externally
+  if (file && !preview) {
+    setPreview(URL.createObjectURL(file));
+  }
+  if (!file && preview) {
+    setPreview(null);
+  }
 
   return (
     <div>
@@ -45,45 +58,55 @@ function ImageUpload({
         onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
         style={{
           border: preview ? "1.5px solid #ddd" : "1.5px dashed #ccc",
-          borderRadius: 10,
-          cursor: "pointer",
-          overflow: "hidden",
-          height: 200,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#fafaf8",
-          position: "relative",
+          borderRadius: 10, cursor: "pointer", overflow: "hidden",
+          height: 200, display: "flex", alignItems: "center", justifyContent: "center",
+          background: "#fafaf8", position: "relative",
         }}
       >
-        {preview ? (
-          <img src={preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        ) : (
-          <span style={{ color: "#bbb", fontSize: 13 }}>Click or drop image</span>
-        )}
+        {preview
+          ? <img src={preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          : <span style={{ color: "#bbb", fontSize: 13 }}>Click or drop image</span>
+        }
       </div>
-      <input ref={inputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+      <input ref={inputRef} type="file" accept="image/*" style={{ display: "none" }}
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
     </div>
   );
 }
 
 export default function Home() {
   const [targetFile, setTargetFile] = useState<File | null>(null);
-  const [studentFile, setStudentFile] = useState<File | null>(null);
+  const [userFile, setUserFile] = useState<File | null>(null);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState("");
+  const [showAbout, setShowAbout] = useState(false);
+
+  const selectFromBank = async (src: string) => {
+    const res = await fetch(src);
+    const blob = await res.blob();
+    const file = new File([blob], src.split("/").pop() || "target.jpg", { type: blob.type || "image/jpeg" });
+    setTargetFile(file);
+  };
+
+  const reset = () => {
+    setTargetFile(null);
+    setUserFile(null);
+    setPrompt("");
+    setResult(null);
+    setError("");
+  };
 
   const evaluate = async () => {
-    if (!targetFile || !studentFile) return;
+    if (!targetFile || !userFile) return;
     setLoading(true);
     setError("");
     setResult(null);
 
     const form = new FormData();
     form.append("target", targetFile);
-    form.append("student", studentFile);
+    form.append("student", userFile);
     form.append("prompt", prompt);
 
     try {
@@ -101,28 +124,91 @@ export default function Home() {
   return (
     <main style={{ maxWidth: 720, margin: "0 auto", padding: "48px 24px" }}>
 
-      <div style={{ marginBottom: 40 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 600, letterSpacing: "-0.02em", marginBottom: 4 }}>
-          Learn to see again
-        </h1>
-        <p style={{ fontSize: 13, color: "#888" }}>
-          Upload the target image and the student's result to get a detailed comparison.
-        </p>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 40 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <Image src="/logo.png" alt="Castro Lab" width={48} height={48} style={{ objectFit: "contain" }} />
+          <div>
+            <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", color: "#aaa", marginBottom: 2 }}>Castro Lab</p>
+            <h1 style={{ fontSize: 20, fontWeight: 600, letterSpacing: "-0.02em" }}>Learn to See Again</h1>
+          </div>
+        </div>
+        <button onClick={() => setShowAbout(!showAbout)} style={{
+          background: "none", border: "1.5px solid #e0e0e0", borderRadius: 8,
+          padding: "6px 14px", fontSize: 12, color: "#888", cursor: "pointer",
+        }}>
+          {showAbout ? "Close" : "About"}
+        </button>
       </div>
 
+      {/* About panel */}
+      {showAbout && (
+        <div style={{ background: "#fff", border: "1.5px solid #ebebeb", borderRadius: 12, padding: 24, marginBottom: 32 }}>
+          <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#aaa", marginBottom: 16 }}>Philosophy</p>
+          <div style={{ fontSize: 14, color: "#444", lineHeight: 1.8, display: "flex", flexDirection: "column", gap: 12 }}>
+            <p><strong>Learn to See Again</strong> is built on a simple premise: most people don't describe what they see — they describe what they think is there.</p>
+            <p>The gap between the target image and the user's result isn't a technical failure. It's a perceptual one. The exercise makes that gap visible. When you have to put reality into words precisely enough for a machine to reconstruct it, every assumption, every skipped detail, every vague gesture becomes evidence.</p>
+            <p>The goal isn't to get better at prompting. It's to get better at looking — at noticing color before naming it, at feeling spatial weight before measuring it, at staying with what's actually in front of you instead of the category it belongs to.</p>
+            <p>The feedback isn't about the image. It's about the user's relationship with observation itself.</p>
+          </div>
+
+          <div style={{ borderTop: "1.5px solid #f0f0f0", marginTop: 24, paddingTop: 20 }}>
+            <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#aaa", marginBottom: 14 }}>How to use</p>
+            <ol style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
+              {[
+                "Choose a target image from the bank below, or upload your own.",
+                "Study the image carefully for 60–90 seconds. Then close it.",
+                "Write a prompt describing what you saw — as precisely as you can.",
+                "Use your prompt in an image generation tool (Midjourney, DALL·E, etc.) and save the result.",
+                "Upload your result here alongside the target.",
+                "Read the feedback — not to score better next time, but to notice what you missed.",
+              ].map((step, i) => (
+                <li key={i} style={{ display: "flex", gap: 12, fontSize: 13, color: "#555", lineHeight: 1.6 }}>
+                  <span style={{ color: "#bbb", minWidth: 18, fontVariantNumeric: "tabular-nums" }}>{i + 1}.</span>
+                  {step}
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+      )}
+
+      {/* Target bank */}
+      <div style={{ marginBottom: 20 }}>
+        <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", marginBottom: 10 }}>Target Bank</p>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          {TARGET_BANK.map((t) => (
+            <div
+              key={t.src}
+              onClick={() => selectFromBank(t.src)}
+              style={{
+                width: 80, height: 60, borderRadius: 8, overflow: "hidden", cursor: "pointer",
+                border: targetFile?.name === t.src.split("/").pop() ? "2px solid #1a1a1a" : "2px solid transparent",
+                outline: "1.5px solid #e0e0e0", transition: "border 0.15s",
+              }}
+            >
+              <img src={t.src} alt={t.label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </div>
+          ))}
+          <div style={{ fontSize: 12, color: "#bbb", display: "flex", alignItems: "center", paddingLeft: 4 }}>
+            or upload below
+          </div>
+        </div>
+      </div>
+
+      {/* Upload row */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-        <ImageUpload label="Target Image" id="target" onChange={setTargetFile} />
-        <ImageUpload label="Student's Result" id="student" onChange={setStudentFile} />
+        <ImageUpload label="Target Image" id="target" file={targetFile} onChange={setTargetFile} />
+        <ImageUpload label="Your Result" id="user" file={userFile} onChange={setUserFile} />
       </div>
 
+      {/* Prompt */}
       <div style={{ marginBottom: 16 }}>
-        <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", marginBottom: 8 }}>
-          Student's Prompt
-        </p>
+        <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", marginBottom: 8 }}>Your Prompt</p>
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Paste the prompt the student used…"
+          placeholder="Paste the prompt you used to generate your image…"
           style={{
             width: "100%", background: "#fafaf8", border: "1.5px solid #e0e0e0",
             borderRadius: 10, color: "#1a1a1a", fontSize: 14, padding: "12px 14px",
@@ -133,10 +219,11 @@ export default function Home() {
 
       <button
         onClick={evaluate}
-        disabled={!targetFile || !studentFile || loading}
+        disabled={!targetFile || !userFile || loading}
         style={{
-          width: "100%", background: loading || !targetFile || !studentFile ? "#e8e8e8" : "#1a1a1a",
-          color: loading || !targetFile || !studentFile ? "#aaa" : "#fff",
+          width: "100%",
+          background: loading || !targetFile || !userFile ? "#e8e8e8" : "#1a1a1a",
+          color: loading || !targetFile || !userFile ? "#aaa" : "#fff",
           border: "none", borderRadius: 10, padding: "13px", fontSize: 14,
           fontWeight: 600, cursor: "pointer", transition: "background 0.2s",
         }}
@@ -144,10 +231,9 @@ export default function Home() {
         {loading ? "Evaluating…" : "Evaluate"}
       </button>
 
-      {error && (
-        <p style={{ marginTop: 16, color: "#b83030", fontSize: 13 }}>{error}</p>
-      )}
+      {error && <p style={{ marginTop: 16, color: "#b83030", fontSize: 13 }}>{error}</p>}
 
+      {/* Results */}
       {result && (
         <div style={{ marginTop: 48 }}>
 
@@ -196,13 +282,21 @@ export default function Home() {
             </div>
           ))}
 
-          <div style={{ background: "#fff", border: "1.5px solid #ebebeb", borderRadius: 10, padding: 18 }}>
+          <div style={{ background: "#fff", border: "1.5px solid #ebebeb", borderRadius: 10, padding: 18, marginBottom: 24 }}>
             <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#aaa", marginBottom: 12 }}>How you see</p>
-            <p style={{ fontSize: 14, color: "#444", lineHeight: 1.8 }}>
-              {result.style_feedback}
-            </p>
+            <p style={{ fontSize: 14, color: "#444", lineHeight: 1.8 }}>{result.style_feedback}</p>
           </div>
 
+          <button
+            onClick={reset}
+            style={{
+              width: "100%", background: "none", border: "1.5px solid #e0e0e0",
+              borderRadius: 10, padding: "13px", fontSize: 14, color: "#888",
+              cursor: "pointer", transition: "border-color 0.2s",
+            }}
+          >
+            Start Again
+          </button>
         </div>
       )}
     </main>
