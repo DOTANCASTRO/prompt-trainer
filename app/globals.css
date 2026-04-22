@@ -21,6 +21,40 @@ body {
   margin-bottom: 24px;
 }
 
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.results-enter {
+  animation: fadeIn 0.4s ease both;
+}
+
+.dim-card {
+  animation: fadeUp 0.35s ease both;
+}
+.dim-card:nth-child(1) { animation-delay: 0.00s; }
+.dim-card:nth-child(2) { animation-delay: 0.08s; }
+.dim-card:nth-child(3) { animation-delay: 0.16s; }
+.dim-card:nth-child(4) { animation-delay: 0.24s; }
+.dim-card:nth-child(5) { animation-delay: 0.32s; }
+
+.section-enter-1 { animation: fadeUp 0.35s ease 0.50s both; }
+.section-enter-2 { animation: fadeUp 0.35s ease 0.60s both; }
+.section-enter-3 { animation: fadeUp 0.35s ease 0.75s both; }
+
+.bar-fill {
+  height: 3px;
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.6s ease 0.2s;
+}
+
 @media (max-width: 560px) {
   main { padding: 24px 16px !important; }
 

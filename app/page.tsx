@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, animate, useMotionValue, useTransform } from "framer-motion";
 
 const DIMS = [
   { key: "subjects",    label: "Subjects & Objects" },
@@ -88,26 +87,38 @@ function ImageUpload({ label, id, file, onChange }: {
   );
 }
 
-const cardContainer = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.08 } },
-};
-const cardItem = {
-  hidden: { opacity: 0, y: 14 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } },
-};
+function useCountUp(target: number, duration = 1200) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    let start: number | null = null;
+    const step = (ts: number) => {
+      if (!start) start = ts;
+      const progress = Math.min((ts - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      setValue(target * ease);
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    const id = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(id);
+  }, [target, duration]);
+  return value;
+}
+
+function BarFill({ color, score }: { color: string; score: number }) {
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const id = setTimeout(() => setWidth(score * 10), 50);
+    return () => clearTimeout(id);
+  }, [score]);
+  return <div className="bar-fill" style={{ background: color, width: `${width}%` }} />;
+}
 
 function ScoreCount({ value, color }: { value: number; color: string }) {
-  const count = useMotionValue(0);
-  const display = useTransform(count, (v) => v.toFixed(1));
-  useEffect(() => {
-    const ctrl = animate(count, value, { duration: 1.2, ease: "easeOut" });
-    return ctrl.stop;
-  }, [value, count]);
+  const display = useCountUp(value);
   return (
-    <motion.div style={{ fontSize: 64, fontWeight: 700, letterSpacing: "-0.04em", color, lineHeight: 1 }}>
-      {display}
-    </motion.div>
+    <div style={{ fontSize: 64, fontWeight: 700, letterSpacing: "-0.04em", color, lineHeight: 1 }}>
+      {display.toFixed(1)}
+    </div>
   );
 }
 
@@ -277,12 +288,7 @@ export default function Home() {
 
       {/* Results */}
       {result && (
-        <motion.div
-          style={{ marginTop: 48 }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4 }}
-        >
+        <div className="results-enter" style={{ marginTop: 48 }}>
 
           {/* Score count-up */}
           <div style={{ textAlign: "center", marginBottom: 40 }}>
@@ -292,43 +298,32 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Dimension cards — staggered */}
-          <motion.div className="dims-grid" variants={cardContainer} initial="hidden" animate="show">
+          {/* Dimension cards — staggered via CSS */}
+          <div className="dims-grid">
             {DIMS.map(({ key, label }) => {
               const d = result.dimensions[key];
               const c = scoreColor(d.score);
               return (
-                <motion.div key={key} variants={cardItem} style={{ background: "#fff", border: "1.5px solid #ebebeb", borderRadius: 10, padding: 16 }}>
+                <div key={key} className="dim-card" style={{ background: "#fff", border: "1.5px solid #ebebeb", borderRadius: 10, padding: 16 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                     <span style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", color: "#1a1a1a" }}>{label}</span>
                     <span style={{ fontSize: 15, fontWeight: 700, color: c }}>{d.score}/10</span>
                   </div>
                   <div style={{ height: 3, background: "#f0f0f0", borderRadius: 2, marginBottom: 10 }}>
-                    <motion.div
-                      style={{ height: 3, borderRadius: 2, background: c }}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${d.score * 10}%` }}
-                      transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
-                    />
+                    <BarFill color={c} score={d.score} />
                   </div>
                   <p style={{ fontSize: 12, color: "#1a1a1a", lineHeight: 1.5 }}>{d.feedback}</p>
-                </motion.div>
+                </div>
               );
             })}
-          </motion.div>
+          </div>
 
           {/* What worked / What to fix */}
           {[
-            { title: "What worked", items: result.got_right },
-            { title: "What to fix", items: result.to_fix },
-          ].map(({ title, items }, i) => (
-            <motion.div
-              key={title}
-              style={{ background: "#fff", border: "1.5px solid #ebebeb", borderRadius: 10, padding: 18, marginBottom: 10 }}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, delay: 0.5 + i * 0.1 }}
-            >
+            { title: "What worked", items: result.got_right, cls: "section-enter-1" },
+            { title: "What to fix", items: result.to_fix,   cls: "section-enter-2" },
+          ].map(({ title, items, cls }) => (
+            <div key={title} className={cls} style={{ background: "#fff", border: "1.5px solid #ebebeb", borderRadius: 10, padding: 18, marginBottom: 10 }}>
               <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#1a1a1a", marginBottom: 12 }}>{title}</p>
               <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
                 {items.map((t, i) => (
@@ -338,19 +333,14 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-            </motion.div>
+            </div>
           ))}
 
           {/* How you see */}
-          <motion.div
-            style={{ background: "#fff", border: "1.5px solid #ebebeb", borderRadius: 10, padding: 18, marginBottom: 24 }}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: 0.75 }}
-          >
+          <div className="section-enter-3" style={{ background: "#fff", border: "1.5px solid #ebebeb", borderRadius: 10, padding: 18, marginBottom: 24 }}>
             <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#1a1a1a", marginBottom: 12 }}>How you see</p>
             <p style={{ fontSize: 14, color: "#1a1a1a", lineHeight: 1.8 }}>{result.style_feedback}</p>
-          </motion.div>
+          </div>
 
           <button
             onClick={reset}
@@ -362,7 +352,7 @@ export default function Home() {
           >
             Start Again
           </button>
-        </motion.div>
+        </div>
       )}
     </main>
   );
