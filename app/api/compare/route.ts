@@ -9,7 +9,7 @@ Be specific and pedagogically useful. Return only valid JSON.`;
 
 const PROMPT = `Compare the TARGET image (first) with the USER'S RESULT (second).
 
-Score each dimension 1–10 and give one concrete sentence of feedback.
+Score each dimension 1–10. Feedback must be a single short sentence — direct, specific, no filler.
 
 Dimensions:
 1. subjects — objects, count, identity
@@ -20,9 +20,9 @@ Dimensions:
 
 Also provide:
 - overall_score: weighted average
-- got_right: 2–3 specific things the user captured well
-- to_fix: top 3 concrete prompt improvements
-- style_feedback: a warm, non-technical paragraph (4–6 sentences) about how this user tends to see and describe reality. Not about this specific image — about their observational style. Do they lead with objects and miss atmosphere? Do they measure instead of feel? Do they describe what they expect to see rather than what's actually there? The goal of this exercise is not to prompt a specific image, but to train the ability to truly observe. Speak to them directly, as a teacher would.
+- got_right: 2–3 items, each a short phrase (under 10 words)
+- to_fix: top 3 items, each a short phrase (under 10 words)
+- style_feedback: exactly one paragraph, 3–4 sentences. This is not about the image or the prompt — it is a gentle meta-cognitive reflection on what this person's choices reveal about how they observe and translate reality into language. Look for a pattern: do they default to naming objects before feeling atmosphere? Do they describe the idea of something rather than its specific appearance? Do they skip spatial relationships or light? Then offer one quiet generalization — something they might carry into how they look at things, not just how they prompt. Humble tone, like a thoughtful teacher closing a conversation. No direct instructions. No "next time, try…". Speak to the person, not the task.
 
 Respond with this exact JSON shape:
 {
