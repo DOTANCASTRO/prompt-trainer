@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { motion, animate, useMotionValue, useTransform } from "framer-motion";
 
 const DIMS = [
   { key: "subjects",    label: "Subjects & Objects" },
@@ -11,8 +12,10 @@ const DIMS = [
 ];
 
 const TARGET_BANK = [
-  { src: "/targets/target.jpg", label: "Target 1" },
+  { src: "/targets/target.jpg",  label: "Target 1" },
   { src: "/targets/target2.jpg", label: "Target 2" },
+  { src: "/targets/target3.jpg", label: "Target 3" },
+  { src: "/targets/taeget4.jpg", label: "Target 4" },
 ];
 
 type DimResult = { score: number; feedback: string };
@@ -42,12 +45,18 @@ function ImageUpload({ label, id, file, onChange }: {
   };
 
   useEffect(() => {
-    if (!file) setPreview(null);
+    if (!file) {
+      setPreview(null);
+    } else {
+      const url = URL.createObjectURL(file);
+      setPreview(url);
+      return () => URL.revokeObjectURL(url);
+    }
   }, [file]);
 
   return (
     <div>
-      <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", marginBottom: 8 }}>{label}</p>
+      <p style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a", marginBottom: 8 }}>{label}</p>
       <div
         onClick={() => inputRef.current?.click()}
         onDragOver={(e) => e.preventDefault()}
@@ -68,7 +77,7 @@ function ImageUpload({ label, id, file, onChange }: {
                 <polyline points="17 8 12 3 7 8" />
                 <line x1="12" y1="3" x2="12" y2="15" />
               </svg>
-              <span style={{ color: "#bbb", fontSize: 12 }}>Click or drop image</span>
+              <span style={{ color: "#999", fontSize: 12 }}>Click or drop image</span>
             </div>
           )
         }
@@ -76,6 +85,29 @@ function ImageUpload({ label, id, file, onChange }: {
       <input ref={inputRef} type="file" accept="image/*" style={{ display: "none" }}
         onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
     </div>
+  );
+}
+
+const cardContainer = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+};
+const cardItem = {
+  hidden: { opacity: 0, y: 14 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } },
+};
+
+function ScoreCount({ value, color }: { value: number; color: string }) {
+  const count = useMotionValue(0);
+  const display = useTransform(count, (v) => v.toFixed(1));
+  useEffect(() => {
+    const ctrl = animate(count, value, { duration: 1.2, ease: "easeOut" });
+    return ctrl.stop;
+  }, [value, count]);
+  return (
+    <motion.div style={{ fontSize: 64, fontWeight: 700, letterSpacing: "-0.04em", color, lineHeight: 1 }}>
+      {display}
+    </motion.div>
   );
 }
 
@@ -130,61 +162,61 @@ export default function Home() {
     <main style={{ maxWidth: 720, margin: "0 auto", padding: "48px 24px" }}>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 40 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-          <img src="/logo.png" alt="Castro Lab" width={80} height={80} style={{ objectFit: "contain" }} />
-          <h1 style={{ fontSize: 28, fontWeight: 600, letterSpacing: "-0.03em" }}>Learn to See Again</h1>
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        paddingBottom: 24, marginBottom: 32, borderBottom: "1px solid #e0e0e0",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <img src="/logo.png" alt="Castro Lab" width={52} height={52} className="header-logo" style={{ objectFit: "contain" }} />
+          <h1 className="header-title" style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.03em" }}>Learn to See Again</h1>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div className="header-buttons" style={{ display: "flex", gap: 8 }}>
           <button onClick={() => setShowAbout(!showAbout)} style={{
             background: "none", border: "1.5px solid #e0e0e0", borderRadius: 8,
-            padding: "6px 14px", fontSize: 12, color: "#888", cursor: "pointer",
+            padding: "6px 14px", fontSize: 12, color: "#1a1a1a", cursor: "pointer",
           }}>
-            {showAbout ? "Close" : "About"}
+            {showAbout ? "Close" : "How to"}
           </button>
           <button onClick={reset} style={{
             background: "none", border: "1.5px solid #e0e0e0", borderRadius: 8,
-            padding: "6px 14px", fontSize: 12, color: "#888", cursor: "pointer",
+            padding: "6px 14px", fontSize: 12, color: "#1a1a1a", cursor: "pointer",
           }}>
             Start Over
           </button>
         </div>
       </div>
 
-      {/* About panel */}
+      {/* Philosophy — always visible */}
+      <div style={{ marginBottom: 32 }}>
+        <p style={{ fontSize: 14, color: "#1a1a1a", lineHeight: 1.8 }}>
+          Most people don't describe what they see — they describe what they think is there. This exercise makes that gap visible. When you have to put reality into words precisely enough for a machine to reconstruct it, every assumption, every skipped detail, every vague gesture becomes evidence. The goal isn't to get better at prompting. It's to get better at looking.
+        </p>
+      </div>
+
+      {/* How to panel */}
       {showAbout && (
         <div style={{ background: "#fff", border: "1.5px solid #ebebeb", borderRadius: 12, padding: 24, marginBottom: 32 }}>
-          <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#aaa", marginBottom: 16 }}>Philosophy</p>
-          <div style={{ fontSize: 14, color: "#444", lineHeight: 1.8, display: "flex", flexDirection: "column", gap: 12 }}>
-            <p><strong>Learn to See Again</strong> is built on a simple premise: most people don't describe what they see — they describe what they think is there.</p>
-            <p>The gap between the target image and the user's result isn't a technical failure. It's a perceptual one. The exercise makes that gap visible. When you have to put reality into words precisely enough for a machine to reconstruct it, every assumption, every skipped detail, every vague gesture becomes evidence.</p>
-            <p>The goal isn't to get better at prompting. It's to get better at looking — at noticing color before naming it, at feeling spatial weight before measuring it, at staying with what's actually in front of you instead of the category it belongs to.</p>
-            <p>The feedback isn't about the image. It's about the user's relationship with observation itself.</p>
-          </div>
-
-          <div style={{ borderTop: "1.5px solid #f0f0f0", marginTop: 24, paddingTop: 20 }}>
-            <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#aaa", marginBottom: 14 }}>How to use</p>
-            <ol style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
-              {[
-                "Choose a target image from the bank below, or upload your own.",
-                "Write a prompt describing what you see — as precisely as you can.",
-                "Use your prompt in an image generation tool (Midjourney, DALL·E, etc.) and save the result.",
-                "Upload your result here alongside the target.",
-                "Read the feedback — not to score better next time, but to notice what you missed.",
-              ].map((step, i) => (
-                <li key={i} style={{ display: "flex", gap: 12, fontSize: 13, color: "#555", lineHeight: 1.6 }}>
-                  <span style={{ color: "#bbb", minWidth: 18, fontVariantNumeric: "tabular-nums" }}>{i + 1}.</span>
-                  {step}
-                </li>
-              ))}
-            </ol>
-          </div>
+          <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#1a1a1a", marginBottom: 14 }}>How to use</p>
+          <ol style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
+            {[
+              "Choose a target image from the bank below, or upload your own.",
+              "Write a prompt describing what you see — as precisely as you can.",
+              "Use your prompt in an image generation tool (Midjourney, DALL·E, etc.) and save the result.",
+              "Upload your result here alongside the target.",
+              "Read the feedback — not to score better next time, but to notice what you missed.",
+            ].map((step, i) => (
+              <li key={i} style={{ display: "flex", gap: 12, fontSize: 13, color: "#1a1a1a", lineHeight: 1.6 }}>
+                <span style={{ color: "#999", minWidth: 18, fontVariantNumeric: "tabular-nums" }}>{i + 1}.</span>
+                {step}
+              </li>
+            ))}
+          </ol>
         </div>
       )}
 
       {/* Target bank */}
       <div style={{ marginBottom: 20 }}>
-        <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", marginBottom: 10 }}>Target Bank</p>
+        <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#1a1a1a", marginBottom: 10 }}>Target Bank</p>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           {TARGET_BANK.map((t) => (
             <div
@@ -199,21 +231,21 @@ export default function Home() {
               <img src={t.src} alt={t.label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
           ))}
-          <div style={{ fontSize: 12, color: "#bbb", display: "flex", alignItems: "center", paddingLeft: 4 }}>
+          <div style={{ fontSize: 12, color: "#999", display: "flex", alignItems: "center", paddingLeft: 4 }}>
             or upload below
           </div>
         </div>
       </div>
 
       {/* Upload row */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+      <div className="upload-grid">
         <ImageUpload label="Target Image" id="target" file={targetFile} onChange={setTargetFile} />
         <ImageUpload label="Your Result" id="user" file={userFile} onChange={setUserFile} />
       </div>
 
       {/* Prompt */}
       <div style={{ marginBottom: 16 }}>
-        <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", marginBottom: 8 }}>Your Prompt</p>
+        <p style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a", marginBottom: 8 }}>Add your prompt here</p>
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
@@ -245,57 +277,80 @@ export default function Home() {
 
       {/* Results */}
       {result && (
-        <div style={{ marginTop: 48 }}>
+        <motion.div
+          style={{ marginTop: 48 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4 }}
+        >
 
+          {/* Score count-up */}
           <div style={{ textAlign: "center", marginBottom: 40 }}>
-            <div style={{ fontSize: 64, fontWeight: 700, letterSpacing: "-0.04em", color: scoreColor(result.overall_score), lineHeight: 1 }}>
-              {result.overall_score.toFixed(1)}
-            </div>
-            <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#aaa", marginTop: 6 }}>
+            <ScoreCount value={result.overall_score} color={scoreColor(result.overall_score)} />
+            <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#1a1a1a", marginTop: 6 }}>
               Overall / 10
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
+          {/* Dimension cards — staggered */}
+          <motion.div className="dims-grid" variants={cardContainer} initial="hidden" animate="show">
             {DIMS.map(({ key, label }) => {
               const d = result.dimensions[key];
               const c = scoreColor(d.score);
               return (
-                <div key={key} style={{ background: "#fff", border: "1.5px solid #ebebeb", borderRadius: 10, padding: 16 }}>
+                <motion.div key={key} variants={cardItem} style={{ background: "#fff", border: "1.5px solid #ebebeb", borderRadius: 10, padding: 16 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                    <span style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", color: "#aaa" }}>{label}</span>
+                    <span style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", color: "#1a1a1a" }}>{label}</span>
                     <span style={{ fontSize: 15, fontWeight: 700, color: c }}>{d.score}/10</span>
                   </div>
                   <div style={{ height: 3, background: "#f0f0f0", borderRadius: 2, marginBottom: 10 }}>
-                    <div style={{ height: 3, borderRadius: 2, background: c, width: `${d.score * 10}%`, transition: "width 0.5s ease" }} />
+                    <motion.div
+                      style={{ height: 3, borderRadius: 2, background: c }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${d.score * 10}%` }}
+                      transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+                    />
                   </div>
-                  <p style={{ fontSize: 12, color: "#666", lineHeight: 1.5 }}>{d.feedback}</p>
-                </div>
+                  <p style={{ fontSize: 12, color: "#1a1a1a", lineHeight: 1.5 }}>{d.feedback}</p>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
 
+          {/* What worked / What to fix */}
           {[
             { title: "What worked", items: result.got_right },
             { title: "What to fix", items: result.to_fix },
-          ].map(({ title, items }) => (
-            <div key={title} style={{ background: "#fff", border: "1.5px solid #ebebeb", borderRadius: 10, padding: 18, marginBottom: 10 }}>
-              <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#aaa", marginBottom: 12 }}>{title}</p>
+          ].map(({ title, items }, i) => (
+            <motion.div
+              key={title}
+              style={{ background: "#fff", border: "1.5px solid #ebebeb", borderRadius: 10, padding: 18, marginBottom: 10 }}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: 0.5 + i * 0.1 }}
+            >
+              <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#1a1a1a", marginBottom: 12 }}>{title}</p>
               <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
                 {items.map((t, i) => (
-                  <li key={i} style={{ fontSize: 13, color: "#444", lineHeight: 1.5, paddingLeft: 14, position: "relative" }}>
-                    <span style={{ position: "absolute", left: 0, color: "#ccc" }}>–</span>
+                  <li key={i} style={{ fontSize: 13, color: "#1a1a1a", lineHeight: 1.5, paddingLeft: 14, position: "relative" }}>
+                    <span style={{ position: "absolute", left: 0, color: "#aaa" }}>–</span>
                     {t}
                   </li>
                 ))}
               </ul>
-            </div>
+            </motion.div>
           ))}
 
-          <div style={{ background: "#fff", border: "1.5px solid #ebebeb", borderRadius: 10, padding: 18, marginBottom: 24 }}>
-            <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#aaa", marginBottom: 12 }}>How you see</p>
-            <p style={{ fontSize: 14, color: "#444", lineHeight: 1.8 }}>{result.style_feedback}</p>
-          </div>
+          {/* How you see */}
+          <motion.div
+            style={{ background: "#fff", border: "1.5px solid #ebebeb", borderRadius: 10, padding: 18, marginBottom: 24 }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.75 }}
+          >
+            <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#1a1a1a", marginBottom: 12 }}>How you see</p>
+            <p style={{ fontSize: 14, color: "#1a1a1a", lineHeight: 1.8 }}>{result.style_feedback}</p>
+          </motion.div>
 
           <button
             onClick={reset}
@@ -307,7 +362,7 @@ export default function Home() {
           >
             Start Again
           </button>
-        </div>
+        </motion.div>
       )}
     </main>
   );
